@@ -8,6 +8,7 @@ import android.content.IntentFilter
 import android.hardware.usb.UsbAccessory
 import android.hardware.usb.UsbManager
 import android.os.ParcelFileDescriptor
+import android.util.Log
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.nio.charset.Charset
@@ -18,6 +19,8 @@ private const val ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION"
 
 class AccessoryModeManager(private val context: Context) {
     companion object {
+        private val TAG = AccessoryModeManager::class.java.simpleName
+
         private const val RECEIVE_BUF_SIZE = 1024 * 10
         private val dateFormatter = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
     }
@@ -34,11 +37,12 @@ class AccessoryModeManager(private val context: Context) {
     private var inputStream: FileInputStream? = null
     private var outputStream: FileOutputStream? = null
     private var workerThread: Thread? = null
+    private var worker: Worker? = null
 
     @Synchronized
     fun start() {
         val filter = IntentFilter(ACTION_USB_PERMISSION).apply {
-            addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
+            addAction(UsbManager.ACTION_USB_ACCESSORY_DETACHED)
             addAction(UsbManager.ACTION_USB_ACCESSORY_ATTACHED)
         }
         context.registerReceiver(usbReceiver, filter)
@@ -55,6 +59,7 @@ class AccessoryModeManager(private val context: Context) {
     }
 
     fun log(msg: String) {
+        Log.d(TAG, msg)
         onAddingLog?.invoke(msg)
     }
 
@@ -84,7 +89,8 @@ class AccessoryModeManager(private val context: Context) {
         fileDescriptor?.fileDescriptor?.also { fd ->
             val inputStream = FileInputStream(fd)
             val outputStream = FileOutputStream(fd)
-            workerThread = Thread(Worker(inputStream, onReceived), "InputStream-Worker").apply {
+            worker = Worker(inputStream, onReceived)
+            workerThread = Thread(worker, "InputStream-Worker").apply {
                 start()
             }
             this.connectedUsbAccessory = usbAccessory
@@ -93,6 +99,11 @@ class AccessoryModeManager(private val context: Context) {
 
 //            send("Hello")
         }
+    }
+
+    fun stopCommunication() {
+        worker?.running = false
+        fileDescriptor?.close()
     }
 
     fun send(msg: String) {
@@ -116,34 +127,53 @@ class AccessoryModeManager(private val context: Context) {
                 if (usbAccessory != null
                 //&& intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
                 ) {
-                    log("UsbDevice granted: $usbAccessory")
-                    synchronized(this@AccessoryModeManager) {
+                    log("onAccessoryAttached: $usbAccessory")
+//                    synchronized(this@AccessoryModeManager) {
                         startCommunication(usbAccessory)
-                    }
+//                    }
                 }
             } else if (UsbManager.ACTION_USB_ACCESSORY_DETACHED == intent.action) {
                 val usbAccessory: UsbAccessory? =
                     intent.getParcelableExtra(UsbManager.EXTRA_ACCESSORY)
                 log("onAccessoryDetached, device: $usbAccessory")
+
+                if (usbAccessory != null) { // && usbAccessory == connectedUsbAccessory
+//                    synchronized(this@AccessoryModeManager) {
+                        stopCommunication()
+//                    }
+                }
             }
         }
     }
 
     class Worker(private val inputStream: FileInputStream, private val onReceived: (String) -> Unit) :
         Runnable {
+
+        var running = true
+
         override fun run() {
             val receiveBuffer = ByteArray(RECEIVE_BUF_SIZE)
 
-            while (true) {
-                val receivedSize = inputStream.read(receiveBuffer, 0, RECEIVE_BUF_SIZE)
+            while (running) {
+                try {
+                    val receivedSize = inputStream.read(receiveBuffer, 0, RECEIVE_BUF_SIZE)
 
-                val firstZero = receiveBuffer.indexOfFirst { it.toInt() == 0 }.coerceAtMost(RECEIVE_BUF_SIZE)
-                val trimmed = ByteArray(firstZero)
-                System.arraycopy(receiveBuffer, 0, trimmed, 0, trimmed.size)
+                    val firstZero = receiveBuffer.indexOfFirst { it.toInt() == 0 }.coerceAtMost(RECEIVE_BUF_SIZE)
+                    val trimmed = ByteArray(firstZero)
+                    System.arraycopy(receiveBuffer, 0, trimmed, 0, trimmed.size)
 
-                val msg = trimmed.toString(Charset.defaultCharset())
+                    val msg = trimmed.toString(Charset.defaultCharset())
 
-                onReceived(msg)
+                    onReceived(msg)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+
+                    try {
+                        Thread.sleep(5000)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
             }
         }
     }
