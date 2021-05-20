@@ -30,11 +30,14 @@ class AccessoryActivity : AppCompatActivity() {
 
         setViews()
 
-        manager.start()
+//        manager.start()
 
         if (intent != null) {
-            manager.onIntent(intent)
+            AccessoryService.start(this, intent)
+//            manager.onIntent(intent)
         }
+
+//        finish()
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -42,13 +45,14 @@ class AccessoryActivity : AppCompatActivity() {
         Log.d(TAG, "${intent?.toString()}")
 
         if (intent != null) {
-            manager.onIntent(intent)
+            AccessoryService.start(this, intent)
+//            manager.onIntent(intent)
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        manager.stop()
+//        manager.stop()
     }
 
     private fun setViews() {

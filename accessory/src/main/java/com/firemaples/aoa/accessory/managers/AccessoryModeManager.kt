@@ -128,9 +128,9 @@ class AccessoryModeManager(private val context: Context) {
                 //&& intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
                 ) {
                     log("onAccessoryAttached: $usbAccessory")
-//                    synchronized(this@AccessoryModeManager) {
+                    synchronized(this@AccessoryModeManager) {
                         startCommunication(usbAccessory)
-//                    }
+                    }
                 }
             } else if (UsbManager.ACTION_USB_ACCESSORY_DETACHED == intent.action) {
                 val usbAccessory: UsbAccessory? =
@@ -138,9 +138,9 @@ class AccessoryModeManager(private val context: Context) {
                 log("onAccessoryDetached, device: $usbAccessory")
 
                 if (usbAccessory != null) { // && usbAccessory == connectedUsbAccessory
-//                    synchronized(this@AccessoryModeManager) {
+                    synchronized(this@AccessoryModeManager) {
                         stopCommunication()
-//                    }
+                    }
                 }
             }
         }
