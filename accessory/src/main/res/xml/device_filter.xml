@@ -2,4 +2,5 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- MI8 -->
     <usb-device vendor-id="1234" product-id="5678" class="255" subclass="66" protocol="1" />
+    <usb-accessory manufacturer="firemaples" model="android.usbaoa.test" version="0.1"/>
 </resources>
