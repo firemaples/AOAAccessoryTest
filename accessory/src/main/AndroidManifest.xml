@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.firemaples.aoa.accessory">
+          package="com.firemaples.aoa.accessory">
 
-    <uses-feature android:name="android.hardware.usb.accessory" />
+    <uses-feature android:name="android.hardware.usb.accessory"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
 
     <application
         android:allowBackup="true"
@@ -11,19 +12,22 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <uses-library android:name="com.android.future.usb.accessory" />
-        <activity android:name=".AccessoryActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+        <uses-library android:name="com.android.future.usb.accessory"/>
 
-                <action android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED" />
+        <activity android:name=".AccessoryActivity" android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+
+                <action android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED"/>
             </intent-filter>
 
             <meta-data
                 android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED"
-                android:resource="@xml/device_filter" />
+                android:resource="@xml/device_filter"/>
         </activity>
+
+        <service android:name=".AccessoryService"/>
     </application>
 
 </manifest>
