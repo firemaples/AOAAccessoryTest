@@ -1,2 +1,2 @@
-include ':app'
+include ':accessory', ':host', ':common'
 rootProject.name='AOAAccesoryTest'
